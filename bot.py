@@ -28,9 +28,10 @@ def fetch_summary():
         raise RuntimeError("Block 'Already reached target' not found.")
 
     window = lines[start : start + 250]
+    print("DEBUG window head:", window[:40])
 
     # tolerantní na různé mezery a formát "DEF £5.0"
-    pos_price_re = re.compile(r"^(GK|DEF|MID|FW)\s+£\s*\d+(\.\d+)?$", re.UNICODE)
+    pos_price_re = re.compile(r"^(GK|DEF|MID|FW)\s+£\s*\d+(?:\.\d+)?\s*$", re.UNICODE)
     pct_re = re.compile(r"^-?\d+(\.\d+)?%$")
 
     items = []
@@ -65,8 +66,11 @@ def fetch_summary():
         elif val <= -100:
             fallers.append((name, pos_price, pct))
 
-    return risers, fallers
+    print("DEBUG items:", items[:10])
+    print("DEBUG risers:", risers)
+    print("DEBUG fallers:", fallers)
 
+    return risers, fallers
 
 def format_message(risers, fallers):
     def fmt(lst):
