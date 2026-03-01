@@ -29,27 +29,31 @@ def fetch_summary():
 
     window = lines[start:start + 250]
 
-    pos_price_re = re.compile(r"^(GK|DEF|MID|FW)\s+£\d+(\.\d+)?$")
+    pos_price_re = re.compile(r"^(GK|DEF|MID|FW)\s+£\s*\d+(\.\d+)?$", re.UNICODE)
     pct_re = re.compile(r"^-?\d+(\.\d+)?%$")
 
-    items = []
-    i = 0
-    while i < len(window):
-        if pos_price_re.match(window[i]):
-            pos_price = window[i]
-            name = window[i - 1] if i - 1 >= 0 else None
+items = []
+i = 0
+while i < len(window):
+    if pos_price_re.match(window[i]):
+        pos_price = window[i]
+        name = window[i - 1] if i - 1 >= 0 else None
 
-            pct = None
-            for j in range(i + 1, min(i + 6, len(window))):
-                if pct_re.match(window[j]):
-                    pct = window[j]
-                    break
+        if name:
+            name = name.replace("#####", "").strip()
 
-            if name and pct:
-                items.append((name, pos_price, pct))
-                i = j + 1
-                continue
-        i += 1
+        pct = None
+        for j in range(i + 1, min(i + 6, len(window))):
+            if pct_re.match(window[j]):
+                pct = window[j]
+                break
+
+        if name and pct:
+            items.append((name, pos_price, pct))
+            i = j + 1
+            continue
+
+    i += 1
 
     risers = []
     fallers = []
