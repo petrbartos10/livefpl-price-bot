@@ -27,8 +27,18 @@ def fetch_summary():
     if start is None:
         raise RuntimeError("Block 'Already reached target' not found.")
 
-    window = lines[start : start + 250]
-    print("DEBUG window head:", window[:40])
+window = lines[start : start + 250]
+def clean(s: str) -> str:
+    # LiveFPL někdy vrací "Â£" místo "£" + koncové čárky
+    return (
+        s.replace("\xa0", " ")
+         .replace("Â£", "£")
+         .strip()
+         .strip(",")
+    )
+
+window = [clean(x) for x in window]
+print("DEBUG window head:", window[:40])
 
     # tolerantní na různé mezery a formát "DEF £5.0"
     pos_price_re = re.compile(r"^(GK|DEF|MID|FW)\s+£\s*\d+(?:\.\d+)?\s*$", re.UNICODE)
