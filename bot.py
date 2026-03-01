@@ -25,35 +25,36 @@ def fetch_summary():
 
     start = next((i for i, ln in enumerate(lines) if "Already reached target" in ln), None)
     if start is None:
-        raise RuntimeError("Block not found.")
+        raise RuntimeError("Block 'Already reached target' not found.")
 
-    window = lines[start:start + 250]
+    window = lines[start : start + 250]
 
+    # tolerantní na různé mezery a formát "DEF £5.0"
     pos_price_re = re.compile(r"^(GK|DEF|MID|FW)\s+£\s*\d+(\.\d+)?$", re.UNICODE)
     pct_re = re.compile(r"^-?\d+(\.\d+)?%$")
 
-items = []
-i = 0
-while i < len(window):
-    if pos_price_re.match(window[i]):
-        pos_price = window[i]
-        name = window[i - 1] if i - 1 >= 0 else None
+    items = []
+    i = 0
+    while i < len(window):
+        if pos_price_re.match(window[i]):
+            pos_price = window[i]
+            name = window[i - 1] if i - 1 >= 0 else None
 
-        if name:
-            name = name.replace("#####", "").strip()
+            if name:
+                name = name.replace("#####", "").strip()
 
-        pct = None
-        for j in range(i + 1, min(i + 6, len(window))):
-            if pct_re.match(window[j]):
-                pct = window[j]
-                break
+            pct = None
+            for j in range(i + 1, min(i + 6, len(window))):
+                if pct_re.match(window[j]):
+                    pct = window[j]
+                    break
 
-        if name and pct:
-            items.append((name, pos_price, pct))
-            i = j + 1
-            continue
+            if name and pct:
+                items.append((name, pos_price, pct))
+                i = j + 1
+                continue
 
-    i += 1
+        i += 1
 
     risers = []
     fallers = []
@@ -74,28 +75,31 @@ def format_message(risers, fallers):
         return "\n".join([f"• {n} — {pp} — {pct}" for n, pp, pct in lst])
 
     return (
-        "💥 **LiveFPL – Potential Price Changes**\n\n"
-        f"📈 **Risers**\n{fmt(risers)}\n\n"
-        f"📉 **Fallers**\n{fmt(fallers)}"
+        "💥 **LiveFPL – Potential Price Changes**\n"
+        f"🔗 {LIVEFPL_URL}\n\n"
+        f"📈 **Risers (>= +100%)**\n{fmt(risers)}\n\n"
+        f"📉 **Fallers (<= -100%)**\n{fmt(fallers)}"
     )
 
 
 def load_state():
     if STATE_FILE.exists():
-        return json.loads(STATE_FILE.read_text())
+        return json.loads(STATE_FILE.read_text(encoding="utf-8"))
     return {"hash": ""}
 
 
 def save_state(h):
-    STATE_FILE.write_text(json.dumps({"hash": h}))
+    STATE_FILE.write_text(json.dumps({"hash": h}, ensure_ascii=False), encoding="utf-8")
 
 
 def sha(s):
-    return hashlib.sha256(s.encode()).hexdigest()
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
 def post_discord(webhook_url, content):
-    requests.post(webhook_url, json={"content": content})
+    # pro jistotu kontrola, ať to potichu neselže
+    resp = requests.post(webhook_url, json={"content": content}, timeout=30)
+    resp.raise_for_status()
 
 
 def main():
